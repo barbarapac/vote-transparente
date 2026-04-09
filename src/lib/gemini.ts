@@ -98,6 +98,13 @@ const MCP_TOOLS: ChatCompletionTool[] = [
   },
 ]
 
+// Limita o tamanho das respostas das ferramentas para não estourar o contexto
+function truncarResposta(resultado: unknown, maxChars = 3000): string {
+  const texto = JSON.stringify(resultado)
+  if (texto.length <= maxChars) return texto
+  return texto.slice(0, maxChars) + `\n...[resposta truncada — ${texto.length} chars totais]`
+}
+
 export async function consultarComIA(pergunta: string): Promise<string> {
   const sessionId = await createMcpSession()
 
@@ -106,14 +113,15 @@ export async function consultarComIA(pergunta: string): Promise<string> {
     { role: 'user', content: pergunta },
   ]
 
-  // Loop de tool calling
-  while (true) {
+  // Loop de tool calling (máx 8 rodadas para evitar loop infinito)
+  for (let rodada = 0; rodada < 8; rodada++) {
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages,
       tools: MCP_TOOLS,
       tool_choice: 'auto',
       temperature: 0.2,
+      max_tokens: 4096,
     })
 
     const message = response.choices[0].message
@@ -123,7 +131,6 @@ export async function consultarComIA(pergunta: string): Promise<string> {
       return message.content ?? 'Sem resposta disponível.'
     }
 
-    // Executa cada tool chamada
     for (const toolCall of message.tool_calls) {
       const args = JSON.parse(toolCall.function.arguments || '{}')
       let result: unknown
@@ -137,8 +144,10 @@ export async function consultarComIA(pergunta: string): Promise<string> {
       messages.push({
         role: 'tool',
         tool_call_id: toolCall.id,
-        content: JSON.stringify(result),
+        content: truncarResposta(result),
       })
     }
   }
+
+  return 'Não foi possível concluir a consulta. Tente novamente com uma pergunta mais específica.'
 }
