@@ -104,7 +104,7 @@ export async function consultarComIA(pergunta: string): Promise<string> {
   const sessionId = await createMcpSession()
 
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-2.0-flash',
     systemInstruction: SYSTEM_PROMPT,
     tools: mcpTools,
   })
