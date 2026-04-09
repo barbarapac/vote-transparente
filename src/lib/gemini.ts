@@ -1,7 +1,8 @@
-import { GoogleGenerativeAI, SchemaType, Tool, FunctionDeclaration } from '@google/generative-ai'
-import { createMcpSession, listMcpTools, callMcpTool } from './mcp-client'
+import Groq from 'groq-sdk'
+import type { ChatCompletionTool, ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions'
+import { createMcpSession, callMcpTool } from './mcp-client'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 const SYSTEM_PROMPT = `Você é um assistente cívico especializado em transparência eleitoral brasileira.
 
@@ -19,120 +20,125 @@ REGRAS IMPORTANTES:
 Para pesquisar candidatos, use a ferramenta search_tools para descobrir quais ferramentas usar,
 depois use call_tool para executar as consultas necessárias.`
 
-// Definição das 6 meta-ferramentas do MCP Brasil para o Gemini
-const MCP_FUNCTION_DECLARATIONS: FunctionDeclaration[] = [
+const MCP_TOOLS: ChatCompletionTool[] = [
   {
-    name: 'search_tools',
-    description: 'Busca ferramentas disponíveis no MCP Brasil por linguagem natural. Use para descobrir quais ferramentas usar antes de chamar call_tool.',
-    parameters: {
-      type: SchemaType.OBJECT,
-      properties: {
-        query: { type: SchemaType.STRING, description: 'Busca em linguagem natural, ex: "candidatos TSE eleições cargo"' },
+    type: 'function',
+    function: {
+      name: 'search_tools',
+      description: 'Busca ferramentas disponíveis no MCP Brasil por linguagem natural. Use antes de call_tool.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Busca em português, ex: "candidatos TSE eleições"' },
+        },
+        required: ['query'],
       },
-      required: ['query'],
     },
   },
   {
-    name: 'call_tool',
-    description: 'Executa uma ferramenta do MCP Brasil pelo nome com os argumentos necessários.',
-    parameters: {
-      type: SchemaType.OBJECT,
-      properties: {
-        name: { type: SchemaType.STRING, description: 'Nome exato da ferramenta (obtido via search_tools)' },
-        arguments: { type: SchemaType.OBJECT, description: 'Argumentos da ferramenta conforme sua definição', properties: {} },
+    type: 'function',
+    function: {
+      name: 'call_tool',
+      description: 'Executa uma ferramenta do MCP Brasil pelo nome exato.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Nome exato da ferramenta (obtido via search_tools)' },
+          arguments: { type: 'object', description: 'Argumentos da ferramenta' },
+        },
+        required: ['name'],
       },
-      required: ['name'],
     },
   },
   {
-    name: 'planejar_consulta',
-    description: 'Cria um plano de execução para consultas complexas que precisam de múltiplas ferramentas.',
-    parameters: {
-      type: SchemaType.OBJECT,
-      properties: {
-        query: { type: SchemaType.STRING, description: 'Pergunta em linguagem natural' },
+    type: 'function',
+    function: {
+      name: 'planejar_consulta',
+      description: 'Cria um plano de execução para consultas complexas com múltiplas ferramentas.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Pergunta em linguagem natural' },
+        },
+        required: ['query'],
       },
-      required: ['query'],
     },
   },
   {
-    name: 'executar_lote',
-    description: 'Executa múltiplas ferramentas em paralelo de uma só vez.',
-    parameters: {
-      type: SchemaType.OBJECT,
-      properties: {
-        consultas: {
-          type: SchemaType.ARRAY,
-          description: 'Lista de ferramentas para executar',
-          items: {
-            type: SchemaType.OBJECT,
-            properties: {
-              tool: { type: SchemaType.STRING },
-              args: { type: SchemaType.OBJECT, properties: {} },
+    type: 'function',
+    function: {
+      name: 'executar_lote',
+      description: 'Executa múltiplas ferramentas em paralelo de uma só vez.',
+      parameters: {
+        type: 'object',
+        properties: {
+          consultas: {
+            type: 'array',
+            description: 'Lista de ferramentas para executar',
+            items: {
+              type: 'object',
+              properties: {
+                tool: { type: 'string' },
+                args: { type: 'object' },
+              },
             },
           },
         },
+        required: ['consultas'],
       },
-      required: ['consultas'],
     },
   },
   {
-    name: 'recomendar_tools',
-    description: 'Recomenda ferramentas relevantes para uma pergunta, com explicação de quando usar cada uma.',
-    parameters: {
-      type: SchemaType.OBJECT,
-      properties: {
-        query: { type: SchemaType.STRING, description: 'Pergunta ou descrição do que precisa' },
-      },
-      required: ['query'],
-    },
-  },
-  {
-    name: 'listar_features',
-    description: 'Lista todas as APIs governamentais disponíveis no MCP Brasil e seus status.',
-    parameters: {
-      type: SchemaType.OBJECT,
-      properties: {},
-      required: [],
+    type: 'function',
+    function: {
+      name: 'listar_features',
+      description: 'Lista todas as APIs governamentais disponíveis no MCP Brasil.',
+      parameters: { type: 'object', properties: {} },
     },
   },
 ]
 
-const mcpTools: Tool[] = [{ functionDeclarations: MCP_FUNCTION_DECLARATIONS }]
-
 export async function consultarComIA(pergunta: string): Promise<string> {
   const sessionId = await createMcpSession()
 
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    systemInstruction: SYSTEM_PROMPT,
-    tools: mcpTools,
-  })
+  const messages: ChatCompletionMessageParam[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: pergunta },
+  ]
 
-  const chat = model.startChat()
-  let response = await chat.sendMessage(pergunta)
+  // Loop de tool calling
+  while (true) {
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      tools: MCP_TOOLS,
+      tool_choice: 'auto',
+      temperature: 0.2,
+    })
 
-  // Loop de function calling
-  while (response.response.functionCalls()?.length) {
-    const calls = response.response.functionCalls()!
-    const results = []
+    const message = response.choices[0].message
+    messages.push(message)
 
-    for (const call of calls) {
-      try {
-        const result = await callMcpTool(sessionId, call.name, (call.args ?? {}) as Record<string, unknown>)
-        results.push({ functionResponse: { name: call.name, response: { result } } })
-      } catch (err) {
-        results.push({
-          functionResponse: {
-            name: call.name,
-            response: { error: err instanceof Error ? err.message : 'Erro ao executar ferramenta' },
-          },
-        })
-      }
+    if (!message.tool_calls?.length) {
+      return message.content ?? 'Sem resposta disponível.'
     }
 
-    response = await chat.sendMessage(results)
-  }
+    // Executa cada tool chamada
+    for (const toolCall of message.tool_calls) {
+      const args = JSON.parse(toolCall.function.arguments || '{}')
+      let result: unknown
 
-  return response.response.text()
+      try {
+        result = await callMcpTool(sessionId, toolCall.function.name, args)
+      } catch (err) {
+        result = { error: err instanceof Error ? err.message : 'Erro ao executar ferramenta' }
+      }
+
+      messages.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify(result),
+      })
+    }
+  }
 }
