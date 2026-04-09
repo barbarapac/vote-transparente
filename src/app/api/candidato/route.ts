@@ -15,19 +15,23 @@ export async function POST(req: NextRequest) {
     ].filter(Boolean).join(', ')
 
     const pergunta = `
-Faça um Raio-X completo do candidato "${nome}"${contexto ? ` (${contexto})` : ''}.
+Pesquise o candidato "${nome}"${contexto ? ` (${contexto})` : ''} e monte um relatório.
 
-Busque e apresente as seguintes informações, usando as ferramentas disponíveis:
+INSTRUÇÕES DE PESQUISA:
+1. Primeiro use search_tools para encontrar ferramentas do TSE (busque por "candidato TSE eleição")
+2. Use call_tool para buscar candidatos pelo nome "${nome}" — experimente anos como 2024, 2022, 2020
+3. Com os dados retornados, extraia as informações disponíveis
+4. Se uma busca falhar, tente com parâmetros diferentes ou ano diferente
+5. Não exija campos opcionais — tente com o mínimo necessário primeiro
 
-1. **Dados Eleitorais (TSE)**: candidaturas registradas, partidos, cargos disputados, situação
-2. **Financiamento de Campanha**: principais doadores, total arrecadado, total gasto
-3. **Histórico Parlamentar** (se for ou foi parlamentar): votações importantes, projetos de lei apresentados, gastos da cota parlamentar
-4. **Transparência e Sanções**: contratos com o governo, sanções ou irregularidades no Portal da Transparência ou TCU
-5. **Anúncios Políticos**: gastos com anúncios pagos em redes sociais (se disponível)
+RELATÓRIO FINAL — apresente o que encontrar em cada seção:
+- **Dados Eleitorais**: candidaturas, partidos, cargos, resultado das eleições
+- **Financiamento**: doadores, valores arrecadados e gastos (se disponível)
+- **Histórico Parlamentar**: votações, projetos, gastos (somente se for parlamentar)
+- **Transparência**: sanções, irregularidades, contratos públicos
+- **Anúncios em redes sociais**: gastos com publicidade política (se disponível)
 
-Para cada seção, indique claramente a fonte dos dados.
-Se alguma informação não estiver disponível, informe isso explicitamente.
-Use linguagem clara e acessível para qualquer eleitor brasileiro.
+Se alguma seção não tiver dados disponíveis, escreva "Dados não encontrados" nessa seção.
     `.trim()
 
     const resposta = await consultarComIA(pergunta)
