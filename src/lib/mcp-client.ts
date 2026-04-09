@@ -32,7 +32,7 @@ async function mcpRequest(sessionId: string, method: string, params: unknown): P
 
   const json: McpResponse = JSON.parse(dataLine.replace('data: ', ''))
   if (json.error) throw new Error(`MCP erro: ${json.error.message}`)
-  return json.result
+  return json.result ?? null
 }
 
 export async function createMcpSession(): Promise<string> {

@@ -100,7 +100,7 @@ const MCP_TOOLS: ChatCompletionTool[] = [
 
 // Limita o tamanho das respostas das ferramentas para não estourar o contexto
 function truncarResposta(resultado: unknown, maxChars = 3000): string {
-  const texto = JSON.stringify(resultado)
+  const texto = JSON.stringify(resultado) ?? 'null'
   if (texto.length <= maxChars) return texto
   return texto.slice(0, maxChars) + `\n...[resposta truncada — ${texto.length} chars totais]`
 }
