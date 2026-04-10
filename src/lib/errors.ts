@@ -37,6 +37,14 @@ export function parseApiError(error: unknown): { message: string; status: number
     return { message: `Limite de consultas atingido.${wait}`, status: 429 }
   }
 
+  // Request muito grande — contexto ou tools excederam o limite de tokens
+  if (status === 413 || msg.includes('413') || msg.toLowerCase().includes('request too large')) {
+    return {
+      message: 'A consulta é complexa demais para processar de uma vez. Tente ser mais específico (ex: informe o estado ou o cargo do candidato).',
+      status: 413,
+    }
+  }
+
   if (status === 400 || msg.includes('tool_use_failed')) {
     return {
       message: 'Houve um problema ao consultar as fontes de dados. Tente reformular sua pesquisa.',
