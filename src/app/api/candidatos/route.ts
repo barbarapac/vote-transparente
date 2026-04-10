@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { consultarComIA } from '@/lib/llm'
 import { parseApiError } from '@/lib/errors'
+import { sanitizeInput, INPUT_LIMITS } from '@/lib/sanitize'
+import { CARGOS_COM_MUNICIPIO } from '@/lib/constants'
 
 const CARGOS_NACIONAIS = new Set(['Presidente'])
-const CARGOS_COM_MUNICIPIO = new Set(['Prefeito', 'Vereador'])
 
 export async function POST(req: NextRequest) {
   try {
-    const { cargo, estado, municipio, ano } = await req.json()
+    const body = await req.json()
+    const cargo = sanitizeInput(body.cargo, INPUT_LIMITS.cargo)
+    const estado = sanitizeInput(body.estado, INPUT_LIMITS.estado)
+    const municipio = sanitizeInput(body.municipio, INPUT_LIMITS.municipio)
+    const ano = sanitizeInput(body.ano, INPUT_LIMITS.ano)
 
     if (!cargo) {
       return NextResponse.json({ error: 'Cargo é obrigatório' }, { status: 400 })

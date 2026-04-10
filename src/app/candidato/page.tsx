@@ -1,19 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { AlertTriangle } from 'lucide-react'
 import { Header } from '@/components/Header'
 import { Markdown } from '@/components/Markdown'
 import { LoadingConsulta } from '@/components/LoadingConsulta'
-
-const ESTADOS = [
-  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
-  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
-]
-
-const CARGOS = [
-  'Presidente', 'Governador', 'Senador', 'Deputado Federal',
-  'Deputado Estadual', 'Prefeito', 'Vereador'
-]
+import { ESTADOS, CARGOS } from '@/lib/constants'
+import { inputClass } from '@/lib/styles'
 
 export default function CandidatoPage() {
   const [nome, setNome] = useState('')
@@ -44,13 +37,14 @@ export default function CandidatoPage() {
     }
   }
 
-  const inputClass = "w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:bg-white/8 transition-all"
-
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="relative min-h-screen flex flex-col">
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/40 via-slate-950 to-slate-950 pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
       <Header />
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
+      <main className="relative z-10 flex-1 max-w-3xl mx-auto w-full px-4 py-10">
         {/* Título */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Raio-X do Candidato</h1>
@@ -119,8 +113,9 @@ export default function CandidatoPage() {
 
         {/* Erro */}
         {erro && (
-          <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-5">
-            <p className="text-red-400 text-sm">⚠️ {erro}</p>
+          <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-5 flex items-start gap-3">
+            <AlertTriangle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
+            <p className="text-red-400 text-sm">{erro}</p>
           </div>
         )}
 
