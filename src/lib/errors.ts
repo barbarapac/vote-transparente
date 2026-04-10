@@ -13,9 +13,11 @@ export function parseApiError(error: unknown): { message: string; status: number
   // Groq SDK já parseia o JSON — verifica status diretamente no objeto
   if (status === 429 || msg.includes('429')) {
     const waitMatch = msg.match(/try again in (\d+h\d+m[\d.]+s|\d+m[\d.]+s|[\d.]+s)/)
-    const wait = waitMatch ? ` Tente novamente em ${formatWait(waitMatch[1])}.` : ''
+    const wait = waitMatch
+      ? ` Tente novamente em ${formatWait(waitMatch[1])}.`
+      : ' O limite diário pode ter sido atingido — tente novamente amanhã ou atualize o plano no console do Groq.'
     return {
-      message: `Limite de consultas atingido.${wait} Se precisar continuar agora, atualize o plano no console do Groq.`,
+      message: `Limite de consultas atingido.${wait}`,
       status: 429,
     }
   }
