@@ -175,10 +175,56 @@ function estimarTokens(messages: ChatCompletionMessageParam[]): number {
 }
 
 const MAX_CONTEXT_TOKENS = 90_000 // margem de segurança abaixo do limite de 128k
+const MAX_TOOLS = 15 // limite de ferramentas por chamada para não estourar tokens
+
+async function getToolsParaPergunta(
+  sessionId: string,
+  pergunta: string,
+): Promise<{ tools: ChatCompletionTool[]; toolNames: Set<string> }> {
+  const { tools: cached, toolNames: cachedNames } = await getCachedTools(sessionId)
+
+  try {
+    // Busca ferramentas específicas para a pergunta do usuário
+    const result = await withTimeout(
+      callMcpTool(sessionId, 'search_tools', { query: pergunta.slice(0, 300) }),
+      10000,
+    )
+    const discovered = parseDiscoveredTools(result)
+
+    const selected = new Map<string, ChatCompletionTool>()
+
+    // Prioriza ferramentas relevantes para a pergunta
+    for (const tool of discovered) {
+      if (selected.size >= MAX_TOOLS) break
+      const cached_ = cached.find(t => t.function.name === tool.name)
+      if (cached_) {
+        selected.set(tool.name, cached_)
+      } else if (cachedNames.has(tool.name)) {
+        selected.set(tool.name, {
+          type: 'function',
+          function: { name: tool.name, description: tool.description, parameters: tool.inputSchema },
+        })
+      }
+    }
+
+    // Completa com tools do cache genérico se ainda tiver espaço
+    for (const t of cached) {
+      if (selected.size >= MAX_TOOLS) break
+      if (!selected.has(t.function.name)) selected.set(t.function.name, t)
+    }
+
+    const tools = Array.from(selected.values())
+    return { tools, toolNames: new Set(tools.map(t => t.function.name)) }
+  } catch {
+    // Fallback: primeiras MAX_TOOLS do cache genérico
+    const tools = cached.slice(0, MAX_TOOLS)
+    return { tools, toolNames: new Set(tools.map(t => t.function.name)) }
+  }
+}
 
 export async function consultarComIA(pergunta: string): Promise<string> {
   const sessionId = await getSession()
-  const { tools, toolNames } = await getCachedTools(sessionId)
+  const { tools, toolNames } = await getToolsParaPergunta(sessionId, pergunta)
 
   const messages: ChatCompletionMessageParam[] = [
     { role: 'system', content: SYSTEM_PROMPT },
