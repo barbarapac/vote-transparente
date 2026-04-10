@@ -117,12 +117,21 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@keyframes loading {
+  0%   { width: 0%; margin-left: 0%; }
+  50%  { width: 60%; margin-left: 20%; }
+  100% { width: 0%; margin-left: 100%; }
+}
+
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-none;
+  }
+  *:focus-visible {
+    @apply outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground cursor-default select-none;
   }
   html {
     @apply font-sans;
