@@ -22,7 +22,7 @@ export function parseApiError(error: unknown): { message: string; status: number
       const type = parsed.error?.type
 
       if (code === 'rate_limit_exceeded' || type === 'tokens') {
-        const waitMatch = msg.match(/try again in (\d+h\d+m[\d.]+s|\d+m[\d.]+s)/)
+        const waitMatch = msg.match(/try again in (\d+h\d+m[\d.]+s|\d+m[\d.]+s|[\d.]+s)/)
         const wait = waitMatch ? ` Tente novamente em ${formatWait(waitMatch[1])}.` : ''
         return {
           message: `Limite de consultas atingido.${wait} Se precisar continuar agora, atualize o plano no console do Groq.`,
@@ -73,11 +73,13 @@ export function parseApiError(error: unknown): { message: string; status: number
 }
 
 function formatWait(raw: string): string {
-  // "4h8m26.591s" → "4h 8min" | "8m26s" → "8min"
+  // "4h8m26.591s" → "4h 8min" | "8m26s" → "8min" | "16.533s" → "17s"
   const hours = raw.match(/(\d+)h/)
   const mins = raw.match(/(\d+)m/)
+  const secs = raw.match(/([\d.]+)s/)
   if (hours && mins) return `${hours[1]}h ${mins[1]}min`
   if (hours) return `${hours[1]}h`
   if (mins) return `${mins[1]}min`
+  if (secs) return `${Math.ceil(parseFloat(secs[1]))}s`
   return raw
 }
