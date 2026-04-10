@@ -38,10 +38,9 @@ interface DiscoveredTool {
   inputSchema: Record<string, unknown>
 }
 
-// Cache de sessão e tools concretas descobertas
-let cachedSession: string | null = null
-let cachedTools: ChatCompletionTool[] | null = null
-let cachedToolNames: Set<string> | null = null
+// Cache de sessão e tools concretas descobertas (promise-based para evitar race conditions)
+let sessionPromise: Promise<string> | null = null
+let toolsPromise: Promise<{ tools: ChatCompletionTool[]; toolNames: Set<string> }> | null = null
 let cacheTimestamp = 0
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutos
 
@@ -142,31 +141,40 @@ async function discoverConcreteTools(sessionId: string): Promise<{ tools: ChatCo
 
 async function getSession(): Promise<string> {
   const now = Date.now()
-  if (cachedSession && (now - cacheTimestamp) < CACHE_TTL) {
-    return cachedSession
+  if (sessionPromise && (now - cacheTimestamp) < CACHE_TTL) {
+    return sessionPromise
   }
-  cachedSession = await createMcpSession()
-  cachedTools = null
-  cachedToolNames = null
+  // Uma única promise para todos os callers concorrentes
   cacheTimestamp = now
-  return cachedSession
+  toolsPromise = null
+  sessionPromise = createMcpSession().catch(err => {
+    sessionPromise = null // permite retry no próximo request
+    throw err
+  })
+  return sessionPromise
 }
 
 async function getCachedTools(sessionId: string): Promise<{ tools: ChatCompletionTool[]; toolNames: Set<string> }> {
-  if (cachedTools && cachedToolNames) {
-    return { tools: cachedTools, toolNames: cachedToolNames }
+  if (toolsPromise) {
+    return toolsPromise
   }
-  const { tools, toolNames } = await discoverConcreteTools(sessionId)
-  cachedTools = tools
-  cachedToolNames = toolNames
-  return { tools, toolNames }
+  toolsPromise = discoverConcreteTools(sessionId).catch(err => {
+    toolsPromise = null
+    throw err
+  })
+  return toolsPromise
 }
 
-function truncarResposta(resultado: unknown, maxChars = 8000): string {
-  const texto = JSON.stringify(resultado) ?? 'null'
-  if (texto.length <= maxChars) return texto
-  return texto.slice(0, maxChars) + `\n...[truncado — ${texto.length} chars totais]`
+/** Estimativa grosseira: ~4 chars por token em português */
+function estimarTokens(messages: ChatCompletionMessageParam[]): number {
+  let chars = 0
+  for (const msg of messages) {
+    if (typeof msg.content === 'string') chars += msg.content.length
+  }
+  return Math.ceil(chars / 4)
 }
+
+const MAX_CONTEXT_TOKENS = 90_000 // margem de segurança abaixo do limite de 128k
 
 export async function consultarComIA(pergunta: string): Promise<string> {
   const sessionId = await getSession()
@@ -190,6 +198,21 @@ export async function consultarComIA(pergunta: string): Promise<string> {
 
   // Loop de tool calling com tools concretas — Groq nunca vê meta-tools
   for (let rodada = 0; rodada < 10; rodada++) {
+    // Verifica se o contexto está chegando no limite antes de chamar a LLM
+    if (estimarTokens(messages) > MAX_CONTEXT_TOKENS) {
+      messages.push({
+        role: 'user',
+        content: 'O contexto está muito grande. Sintetize uma resposta final com os dados que você já coletou. Não faça mais chamadas de ferramentas.',
+      })
+      const finalResponse = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages,
+        temperature: 0.2,
+        max_tokens: 4096,
+      })
+      return finalResponse.choices[0].message.content ?? 'Sem resposta disponível.'
+    }
+
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages,
@@ -208,14 +231,34 @@ export async function consultarComIA(pergunta: string): Promise<string> {
 
     for (const toolCall of message.tool_calls) {
       const toolName = toolCall.function.name
-      const args = JSON.parse(toolCall.function.arguments || '{}')
+      let args: Record<string, unknown>
+      try {
+        args = JSON.parse(toolCall.function.arguments || '{}')
+      } catch {
+        messages.push({
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: JSON.stringify({ error: 'Argumentos JSON inválidos' }),
+        })
+        continue
+      }
+
+      // Valida que os args são um objeto plano (não array, não null)
+      if (typeof args !== 'object' || args === null || Array.isArray(args)) {
+        messages.push({
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: JSON.stringify({ error: 'Argumentos devem ser um objeto' }),
+        })
+        continue
+      }
+
       let result: unknown
 
       try {
         if (!toolNames.has(toolName)) {
           result = { error: `Ferramenta "${toolName}" não encontrada.` }
         } else {
-          // Executa a tool concreta via call_tool no backend — transparente para o Groq
           result = await callMcpTool(sessionId, 'call_tool', { name: toolName, arguments: args })
         }
       } catch (err) {

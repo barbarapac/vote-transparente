@@ -14,7 +14,7 @@ export function parseApiError(error: unknown): { message: string; status: number
   const msg = error.message
 
   // Tenta extrair JSON da mensagem de erro do Groq
-  const jsonMatch = msg.match(/\{.*\}/s)
+  const jsonMatch = msg.match(/\{[\s\S]*\}/)
   if (jsonMatch) {
     try {
       const parsed: GroqError = JSON.parse(jsonMatch[0])

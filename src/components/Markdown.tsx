@@ -4,8 +4,17 @@ interface Props {
   content: string
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export function Markdown({ content }: Props) {
-  const html = content
+  const html = escapeHtml(content)
     .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold mt-5 mb-2 text-emerald-400">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold mt-6 mb-2 text-white">$1</h2>')
     .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold mt-6 mb-3 text-white">$1</h1>')

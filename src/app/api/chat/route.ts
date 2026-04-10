@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { consultarComIA } from '@/lib/llm'
+import { parseApiError } from '@/lib/errors'
+import { sanitizeInput, INPUT_LIMITS } from '@/lib/sanitize'
 
 export async function POST(req: NextRequest) {
   try {
-    const { pergunta } = await req.json()
+    const body = await req.json()
+    const pergunta = sanitizeInput(body.pergunta, INPUT_LIMITS.pergunta)
 
-    if (!pergunta?.trim()) {
+    if (!pergunta) {
       return NextResponse.json({ error: 'Pergunta não informada' }, { status: 400 })
     }
 
@@ -13,9 +16,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ resposta })
   } catch (error) {
     console.error('Erro no chat:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Erro interno' },
-      { status: 500 }
-    )
+    const { message, status } = parseApiError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

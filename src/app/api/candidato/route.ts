@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { consultarComIA } from '@/lib/llm'
 import { parseApiError } from '@/lib/errors'
+import { sanitizeInput, INPUT_LIMITS } from '@/lib/sanitize'
 
 export async function POST(req: NextRequest) {
   try {
-    const { nome, cargo, estado } = await req.json()
+    const body = await req.json()
+    const nome = sanitizeInput(body.nome, INPUT_LIMITS.nome)
+    const cargo = sanitizeInput(body.cargo, INPUT_LIMITS.cargo)
+    const estado = sanitizeInput(body.estado, INPUT_LIMITS.estado)
 
-    if (!nome?.trim()) {
+    if (!nome) {
       return NextResponse.json({ error: 'Nome do candidato não informado' }, { status: 400 })
     }
 

@@ -4,21 +4,8 @@ import { useState } from 'react'
 import { Header } from '@/components/Header'
 import { Markdown } from '@/components/Markdown'
 import { LoadingConsulta } from '@/components/LoadingConsulta'
-
-const ESTADOS = [
-  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
-  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
-]
-
-const CARGOS = [
-  'Presidente', 'Governador', 'Senador', 'Deputado Federal',
-  'Deputado Estadual', 'Prefeito', 'Vereador'
-]
-
-const CARGOS_COM_ESTADO = new Set(['Governador', 'Senador', 'Deputado Federal', 'Deputado Estadual', 'Prefeito', 'Vereador'])
-const CARGOS_COM_MUNICIPIO = new Set(['Prefeito', 'Vereador'])
-
-const ANOS = [2024, 2022, 2020, 2018, 2016, 2014, 2012, 2010]
+import { ESTADOS, CARGOS, CARGOS_COM_ESTADO, CARGOS_COM_MUNICIPIO, ANOS_ELEICAO } from '@/lib/constants'
+import { inputClass, labelClass } from '@/lib/styles'
 
 export default function CandidatosPage() {
   const [cargo, setCargo] = useState('')
@@ -62,9 +49,6 @@ export default function CandidatosPage() {
       setLoading(false)
     }
   }
-
-  const inputClass = "w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:bg-white/8 transition-all"
-  const labelClass = "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block"
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -135,7 +119,7 @@ export default function CandidatosPage() {
               className={inputClass + ' appearance-none cursor-pointer'}
             >
               <option value="" className="bg-slate-900">Mais recente disponível</option>
-              {ANOS.map(a => <option key={a} value={a} className="bg-slate-900">{a}</option>)}
+              {ANOS_ELEICAO.map(a => <option key={a} value={a} className="bg-slate-900">{a}</option>)}
             </select>
           </div>
 

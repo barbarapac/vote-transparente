@@ -4,16 +4,8 @@ import { useState } from 'react'
 import { Header } from '@/components/Header'
 import { Markdown } from '@/components/Markdown'
 import { LoadingConsulta } from '@/components/LoadingConsulta'
-
-const ESTADOS = [
-  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
-  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
-]
-
-const CARGOS = [
-  'Presidente', 'Governador', 'Senador', 'Deputado Federal',
-  'Deputado Estadual', 'Prefeito', 'Vereador'
-]
+import { ESTADOS, CARGOS } from '@/lib/constants'
+import { inputClass } from '@/lib/styles'
 
 export default function CandidatoPage() {
   const [nome, setNome] = useState('')
@@ -43,8 +35,6 @@ export default function CandidatoPage() {
       setLoading(false)
     }
   }
-
-  const inputClass = "w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:bg-white/8 transition-all"
 
   return (
     <div className="min-h-screen flex flex-col">

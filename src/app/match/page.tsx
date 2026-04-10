@@ -4,19 +4,8 @@ import { useState } from 'react'
 import { Header } from '@/components/Header'
 import { Markdown } from '@/components/Markdown'
 import { LoadingConsulta } from '@/components/LoadingConsulta'
-
-const CARGOS = [
-  'Presidente', 'Governador', 'Senador', 'Deputado Federal',
-  'Deputado Estadual', 'Prefeito', 'Vereador'
-]
-
-const CARGOS_COM_ESTADO = new Set(['Governador', 'Senador', 'Deputado Federal', 'Deputado Estadual', 'Prefeito', 'Vereador'])
-const CARGOS_COM_MUNICIPIO = new Set(['Prefeito', 'Vereador'])
-
-const ESTADOS = [
-  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
-  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
-]
+import { ESTADOS, CARGOS, CARGOS_COM_ESTADO, CARGOS_COM_MUNICIPIO } from '@/lib/constants'
+import { inputClass, labelClass } from '@/lib/styles'
 
 const TEMAS = [
   { icon: '🛡️', label: 'Segurança pública' },
@@ -77,9 +66,6 @@ export default function MatchPage() {
       setLoading(false)
     }
   }
-
-  const inputClass = "w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/60 focus:bg-white/8 transition-all"
-  const labelClass = "text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block"
 
   return (
     <div className="min-h-screen flex flex-col">

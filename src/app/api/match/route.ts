@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { consultarComIA } from '@/lib/llm'
 import { parseApiError } from '@/lib/errors'
+import { sanitizeInput, INPUT_LIMITS } from '@/lib/sanitize'
 
 export async function POST(req: NextRequest) {
   try {
-    const { cargo, estado, municipio, temas, observacao } = await req.json()
+    const body = await req.json()
+    const cargo = sanitizeInput(body.cargo, INPUT_LIMITS.cargo)
+    const estado = sanitizeInput(body.estado, INPUT_LIMITS.estado)
+    const municipio = sanitizeInput(body.municipio, INPUT_LIMITS.municipio)
+    const observacao = sanitizeInput(body.observacao, INPUT_LIMITS.observacao)
+    const temas = Array.isArray(body.temas)
+      ? body.temas.slice(0, 10).map((t: unknown) => sanitizeInput(t, INPUT_LIMITS.tema))
+      : []
 
     const cargosNacionais = ['Presidente']
     const precisaEstado = !cargosNacionais.includes(cargo)
@@ -19,7 +27,7 @@ export async function POST(req: NextRequest) {
 Um eleitor quer saber em quem votar para o cargo de ${cargo}${estado ? ` em ${localidade}` : ' (eleição nacional)'}.
 
 Os temas que mais importam para este eleitor são:
-${temas?.length ? temas.map((t: string) => `- ${t}`).join('\n') : '- Não especificado'}
+${temas.length ? temas.map((t: string) => `- ${t}`).join('\n') : '- Não especificado'}
 
 ${observacao ? `Observação adicional do eleitor: "${observacao}"` : ''}
 
