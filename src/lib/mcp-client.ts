@@ -13,16 +13,25 @@ interface McpResponse {
   error?: { code: number; message: string }
 }
 
-async function mcpRequest(sessionId: string, method: string, params: unknown): Promise<unknown> {
-  const res = await fetch(`${MCP_URL}/mcp`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json, text/event-stream',
-      'mcp-session-id': sessionId,
-    },
-    body: JSON.stringify({ jsonrpc: '2.0', method, params, id: Date.now() }),
-  })
+async function mcpRequest(sessionId: string, method: string, params: unknown, timeoutMs = 60000): Promise<unknown> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+
+  let res: Response
+  try {
+    res = await fetch(`${MCP_URL}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream',
+        'mcp-session-id': sessionId,
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', method, params, id: Date.now() }),
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timer)
+  }
 
   const text = await res.text()
 

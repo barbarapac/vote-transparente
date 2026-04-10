@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Header } from '@/components/Header'
 import { Markdown } from '@/components/Markdown'
+import { LoadingConsulta } from '@/components/LoadingConsulta'
 
 const ESTADOS = [
   'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
@@ -114,15 +115,7 @@ export default function CandidatoPage() {
         </div>
 
         {/* Loading */}
-        {loading && (
-          <div className="rounded-2xl bg-white/5 border border-white/10 p-10 text-center">
-            <div className="text-4xl mb-4 animate-pulse">🏛️</div>
-            <p className="text-slate-300 text-sm font-medium mb-1">
-              Consultando TSE, Portal da Transparência, TCU e outras fontes...
-            </p>
-            <p className="text-slate-500 text-xs">Isso pode levar até 30 segundos</p>
-          </div>
-        )}
+        {loading && <LoadingConsulta />}
 
         {/* Erro */}
         {erro && (
@@ -140,7 +133,7 @@ export default function CandidatoPage() {
                 Fontes oficiais
               </span>
             </div>
-            <div className="p-6">
+            <div className="p-6 select-text">
               <Markdown content={resposta} />
             </div>
           </div>

@@ -1,6 +1,6 @@
 import Groq from 'groq-sdk'
 import type { ChatCompletionTool, ChatCompletionMessageParam } from 'groq-sdk/resources/chat/completions'
-import { createMcpSession, listMcpTools, callMcpTool } from './mcp-client'
+import { createMcpSession, callMcpTool } from './mcp-client'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
@@ -15,47 +15,151 @@ REGRAS:
 5. Use linguagem simples e acessível
 
 COMO USAR AS FERRAMENTAS:
-- Você tem acesso direto às ferramentas do governo brasileiro. Chame-as pelo nome.
-- Comece sempre com buscas por nome/texto para obter IDs antes de consultas detalhadas.
-- As ferramentas do TSE geralmente precisam de ano_eleicao (ex: 2022, 2024).
+- Você tem acesso a ferramentas das APIs do governo brasileiro. Use-as diretamente.
+- Comece com buscas por nome para obter IDs antes de consultas detalhadas.
+- Ferramentas do TSE geralmente precisam de ano_eleicao (ex: 2022, 2024).
 - Se uma ferramenta falhar, tente parâmetros diferentes ou outra ferramenta similar.
 - Não desista na primeira falha — tente abordagens alternativas.`
 
-// Cache de sessão e ferramentas MCP
+// Queries usadas para descobrir tools concretas no MCP
+const DISCOVERY_QUERIES = [
+  'candidato TSE eleição buscar por nome',
+  'bens declarados patrimônio candidato',
+  'financiamento campanha doações receitas',
+  'sanções improbidade irregularidades CEIS',
+  'deputado senador parlamentar votações projetos',
+  'contratos públicos licitações fornecedor',
+  'gastos despesas governo federal',
+]
+
+interface DiscoveredTool {
+  name: string
+  description: string
+  inputSchema: Record<string, unknown>
+}
+
+// Cache de sessão e tools concretas descobertas
 let cachedSession: string | null = null
 let cachedTools: ChatCompletionTool[] | null = null
 let cachedToolNames: Set<string> | null = null
 let cacheTimestamp = 0
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutos
 
-async function getMcpToolsAsGroqTools(): Promise<{ sessionId: string; tools: ChatCompletionTool[]; toolNames: Set<string> }> {
-  const now = Date.now()
-  if (cachedSession && cachedTools && cachedToolNames && (now - cacheTimestamp) < CACHE_TTL) {
-    return { sessionId: cachedSession, tools: cachedTools, toolNames: cachedToolNames }
+function extractToolArray(result: unknown): unknown[] {
+  if (!result || typeof result !== 'object') return []
+  const r = result as Record<string, unknown>
+
+  // Formato MCP: { structuredContent: { result: [...] } }
+  const structured = r.structuredContent as Record<string, unknown> | undefined
+  if (Array.isArray(structured?.result)) return structured!.result as unknown[]
+
+  // Fallback: { content: [{ type: 'text', text: '[...]' }] }
+  const content = r.content as Array<{ type: string; text: string }> | undefined
+  if (Array.isArray(content)) {
+    const textItem = content.find(c => c.type === 'text')
+    if (textItem?.text) {
+      try {
+        const parsed = JSON.parse(textItem.text)
+        if (Array.isArray(parsed)) return parsed
+        if (Array.isArray(parsed?.result)) return parsed.result
+      } catch { /* ignora */ }
+    }
   }
 
-  const sessionId = await createMcpSession()
-  const mcpTools = await listMcpTools(sessionId)
+  // Já é array direto
+  if (Array.isArray(result)) return result
 
+  return []
+}
+
+function parseDiscoveredTools(result: unknown): DiscoveredTool[] {
+  return extractToolArray(result)
+    .filter((item): item is Record<string, unknown> =>
+      typeof item === 'object' && item !== null && typeof (item as Record<string, unknown>).name === 'string'
+    )
+    .map(item => ({
+      name: item.name as string,
+      description: (item.description as string) || '',
+      inputSchema: (item.inputSchema as Record<string, unknown>) || { type: 'object', properties: {} },
+    }))
+}
+
+function extractMcpResultText(result: unknown): string {
+  if (!result || typeof result !== 'object') return JSON.stringify(result) ?? 'null'
+  const r = result as Record<string, unknown>
+
+  // Formato MCP: { content: [{ type: 'text', text: '...' }] }
+  const content = r.content as Array<{ type: string; text: string }> | undefined
+  if (Array.isArray(content)) {
+    const texts = content.filter(c => c.type === 'text').map(c => c.text).join('\n')
+    if (texts) return texts
+  }
+
+  // Formato MCP: { structuredContent: { result: '...' } }
+  const structured = r.structuredContent as Record<string, unknown> | undefined
+  if (structured?.result) return JSON.stringify(structured.result)
+
+  return JSON.stringify(result)
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(`Timeout após ${ms}ms`)), ms)
+  )
+  return Promise.race([promise, timeout])
+}
+
+async function discoverConcreteTools(sessionId: string): Promise<{ tools: ChatCompletionTool[]; toolNames: Set<string> }> {
+  const discovered = new Map<string, ChatCompletionTool>()
   const toolNames = new Set<string>()
-  const tools: ChatCompletionTool[] = mcpTools.map(tool => {
-    toolNames.add(tool.name)
-    return {
-      type: 'function' as const,
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: (tool.inputSchema as Record<string, unknown>) || { type: 'object', properties: {} },
-      },
-    }
-  })
 
-  cachedSession = sessionId
+  await Promise.allSettled(
+    DISCOVERY_QUERIES.map(async query => {
+      try {
+        const result = await withTimeout(callMcpTool(sessionId, 'search_tools', { query }), 60000)
+        const tools = parseDiscoveredTools(result)
+        for (const tool of tools) {
+          if (!discovered.has(tool.name)) {
+            discovered.set(tool.name, {
+              type: 'function' as const,
+              function: {
+                name: tool.name,
+                description: tool.description,
+                parameters: tool.inputSchema,
+              },
+            })
+            toolNames.add(tool.name)
+          }
+        }
+      } catch {
+        // query falhou — ignora e segue
+      }
+    })
+  )
+
+  return { tools: Array.from(discovered.values()), toolNames }
+}
+
+async function getSession(): Promise<string> {
+  const now = Date.now()
+  if (cachedSession && (now - cacheTimestamp) < CACHE_TTL) {
+    return cachedSession
+  }
+  cachedSession = await createMcpSession()
+  cachedTools = null
+  cachedToolNames = null
+  cacheTimestamp = now
+  return cachedSession
+}
+
+async function getCachedTools(sessionId: string): Promise<{ tools: ChatCompletionTool[]; toolNames: Set<string> }> {
+  if (cachedTools && cachedToolNames) {
+    return { tools: cachedTools, toolNames: cachedToolNames }
+  }
+  const { tools, toolNames } = await discoverConcreteTools(sessionId)
   cachedTools = tools
   cachedToolNames = toolNames
-  cacheTimestamp = now
-
-  return { sessionId, tools, toolNames }
+  return { tools, toolNames }
 }
 
 function truncarResposta(resultado: unknown, maxChars = 8000): string {
@@ -65,28 +169,26 @@ function truncarResposta(resultado: unknown, maxChars = 8000): string {
 }
 
 export async function consultarComIA(pergunta: string): Promise<string> {
-  const { sessionId, tools, toolNames } = await getMcpToolsAsGroqTools()
-
-  // Se não encontrou ferramentas, responde sem tools
-  if (tools.length === 0) {
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: pergunta },
-      ],
-      temperature: 0.2,
-      max_tokens: 4096,
-    })
-    return response.choices[0].message.content ?? 'Sem resposta disponível.'
-  }
+  const sessionId = await getSession()
+  const { tools, toolNames } = await getCachedTools(sessionId)
 
   const messages: ChatCompletionMessageParam[] = [
     { role: 'system', content: SYSTEM_PROMPT },
     { role: 'user', content: pergunta },
   ]
 
-  // Loop de tool calling — agora cada rodada é uma consulta real, não discovery
+  // Sem tools descobertas: responde sem function calling
+  if (tools.length === 0) {
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      temperature: 0.2,
+      max_tokens: 4096,
+    })
+    return response.choices[0].message.content ?? 'Sem resposta disponível.'
+  }
+
+  // Loop de tool calling com tools concretas — Groq nunca vê meta-tools
   for (let rodada = 0; rodada < 10; rodada++) {
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
@@ -111,18 +213,24 @@ export async function consultarComIA(pergunta: string): Promise<string> {
 
       try {
         if (!toolNames.has(toolName)) {
-          result = { error: `Ferramenta "${toolName}" não existe. Use uma das ferramentas disponíveis.` }
+          result = { error: `Ferramenta "${toolName}" não encontrada.` }
         } else {
-          result = await callMcpTool(sessionId, toolName, args)
+          // Executa a tool concreta via call_tool no backend — transparente para o Groq
+          result = await callMcpTool(sessionId, 'call_tool', { name: toolName, arguments: args })
         }
       } catch (err) {
         result = { error: err instanceof Error ? err.message : 'Erro ao executar ferramenta' }
       }
 
+      const resultText = extractMcpResultText(result)
+      const resultTruncado = resultText.length > 8000
+        ? resultText.slice(0, 8000) + `\n...[truncado — ${resultText.length} chars totais]`
+        : resultText
+
       messages.push({
         role: 'tool',
         tool_call_id: toolCall.id,
-        content: truncarResposta(result),
+        content: resultTruncado,
       })
     }
   }

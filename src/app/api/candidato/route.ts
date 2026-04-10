@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { consultarComIA } from '@/lib/llm'
+import { parseApiError } from '@/lib/errors'
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,32 +16,29 @@ export async function POST(req: NextRequest) {
     ].filter(Boolean).join(', ')
 
     const pergunta = `
-Pesquise o candidato "${nome}"${contexto ? ` (${contexto})` : ''} e monte um relatório.
+Monte um relatório sobre o candidato "${nome}"${contexto ? ` (${contexto})` : ''} usando dados oficiais do governo brasileiro.
 
-INSTRUÇÕES DE PESQUISA:
-1. Primeiro use search_tools para encontrar ferramentas do TSE (busque por "candidato TSE eleição")
-2. Use call_tool para buscar candidatos pelo nome "${nome}" — experimente anos como 2024, 2022, 2020
-3. Com os dados retornados, extraia as informações disponíveis
-4. Se uma busca falhar, tente com parâmetros diferentes ou ano diferente
-5. Não exija campos opcionais — tente com o mínimo necessário primeiro
+INSTRUÇÕES:
+- Busque o candidato pelo nome — tente as eleições mais recentes primeiro (2024, 2022) e vá recuando se necessário
+- Se não encontrar por "${nome}", tente o nome completo (ex: "Lula" = "Luiz Inácio Lula da Silva", "Bolsonaro" = "Jair Messias Bolsonaro")
+- Com o ID encontrado, busque bens declarados, financiamento e histórico
+- Tente também sanções, irregularidades e contratos com o nome ou CPF encontrado
 
-RELATÓRIO FINAL — apresente o que encontrar em cada seção:
-- **Dados Eleitorais**: candidaturas, partidos, cargos, resultado das eleições
-- **Financiamento**: doadores, valores arrecadados e gastos (se disponível)
-- **Histórico Parlamentar**: votações, projetos, gastos (somente se for parlamentar)
+RELATÓRIO FINAL:
+- **Dados Eleitorais**: candidaturas, partidos, cargos, resultados
+- **Financiamento**: doadores, valores arrecadados e gastos
+- **Histórico Parlamentar**: votações e projetos (se parlamentar)
 - **Transparência**: sanções, irregularidades, contratos públicos
-- **Anúncios em redes sociais**: gastos com publicidade política (se disponível)
+- **Anúncios**: gastos com publicidade política
 
-Se alguma seção não tiver dados disponíveis, escreva "Dados não encontrados" nessa seção.
+Seções sem dados: escreva "Dados não encontrados".
     `.trim()
 
     const resposta = await consultarComIA(pergunta)
     return NextResponse.json({ resposta })
   } catch (error) {
     console.error('Erro no raio-x:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Erro interno' },
-      { status: 500 }
-    )
+    const { message, status } = parseApiError(error)
+    return NextResponse.json({ error: message }, { status })
   }
 }

@@ -5,6 +5,11 @@ import { Header } from '@/components/Header'
 import { Markdown } from '@/components/Markdown'
 import { LoadingConsulta } from '@/components/LoadingConsulta'
 
+const ESTADOS = [
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
+  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
+]
+
 const CARGOS = [
   'Presidente', 'Governador', 'Senador', 'Deputado Federal',
   'Deputado Estadual', 'Prefeito', 'Vereador'
@@ -13,28 +18,16 @@ const CARGOS = [
 const CARGOS_COM_ESTADO = new Set(['Governador', 'Senador', 'Deputado Federal', 'Deputado Estadual', 'Prefeito', 'Vereador'])
 const CARGOS_COM_MUNICIPIO = new Set(['Prefeito', 'Vereador'])
 
-const ESTADOS = [
-  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
-  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
-]
+const ANOS = [2024, 2022, 2020, 2018, 2016, 2014, 2012, 2010]
 
-const TEMAS = [
-  { icon: '🛡️', label: 'Segurança pública' },
-  { icon: '🏥', label: 'Saúde' },
-  { icon: '📚', label: 'Educação' },
-  { icon: '🌿', label: 'Meio ambiente' },
-  { icon: '💼', label: 'Economia e emprego' },
-  { icon: '🔍', label: 'Combate à corrupção' },
-  { icon: '🏠', label: 'Habitação' },
-  { icon: '🚌', label: 'Transporte público' },
-  { icon: '🤝', label: 'Direitos humanos' },
-  { icon: '💡', label: 'Tecnologia e inovação' },
-]
-
-export default function MatchPage() {
+export default function CandidatosPage() {
   const [cargo, setCargo] = useState('')
   const [estado, setEstado] = useState('')
   const [municipio, setMunicipio] = useState('')
+  const [ano, setAno] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [resposta, setResposta] = useState('')
+  const [erro, setErro] = useState('')
 
   const precisaEstado = CARGOS_COM_ESTADO.has(cargo)
   const precisaMunicipio = CARGOS_COM_MUNICIPIO.has(cargo)
@@ -44,29 +37,21 @@ export default function MatchPage() {
     if (!CARGOS_COM_ESTADO.has(novoCargo)) setEstado('')
     if (!CARGOS_COM_MUNICIPIO.has(novoCargo)) setMunicipio('')
   }
-  const [temasSelecionados, setTemasSelecionados] = useState<string[]>([])
-  const [observacao, setObservacao] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [resposta, setResposta] = useState('')
-  const [erro, setErro] = useState('')
 
-  function toggleTema(tema: string) {
-    setTemasSelecionados(prev =>
-      prev.includes(tema) ? prev.filter(t => t !== tema) : [...prev, tema]
-    )
-  }
-
-  async function buscarMatch() {
+  async function listar() {
     if (!cargo) return
     if (precisaEstado && !estado) return
+    if (precisaMunicipio && !municipio) return
+
     setLoading(true)
     setResposta('')
     setErro('')
+
     try {
-      const res = await fetch('/api/match', {
+      const res = await fetch('/api/candidatos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cargo, estado, municipio, temas: temasSelecionados, observacao }),
+        body: JSON.stringify({ cargo, estado, municipio, ano }),
       })
       const data = await res.json()
       if (data.error) setErro(data.error)
@@ -86,31 +71,37 @@ export default function MatchPage() {
       <Header />
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
-        {/* Título */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Match de Valores</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Campo Eleitoral</h1>
           <p className="text-slate-400 text-sm">
-            Diga o que é importante para você e descubra qual candidato melhor
-            representa suas prioridades com base em dados reais.
+            Veja todos os candidatos a um cargo e um resumo rápido sobre cada um —
+            envolvimento em escândalos, projetos e histórico.
           </p>
         </div>
 
-        {/* Formulário */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6 space-y-6">
-
-          {/* Cargo e Estado */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6 space-y-4">
+          {/* Cargo */}
           <div className={`grid gap-4 ${precisaEstado ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <div>
               <label className={labelClass}>Cargo *</label>
-              <select value={cargo} onChange={e => handleCargo(e.target.value)} className={inputClass + " appearance-none cursor-pointer"}>
+              <select
+                value={cargo}
+                onChange={e => handleCargo(e.target.value)}
+                className={inputClass + ' appearance-none cursor-pointer'}
+              >
                 <option value="" className="bg-slate-900">Selecione o cargo</option>
                 {CARGOS.map(c => <option key={c} value={c} className="bg-slate-900">{c}</option>)}
               </select>
             </div>
+
             {precisaEstado && (
               <div>
                 <label className={labelClass}>Estado *</label>
-                <select value={estado} onChange={e => setEstado(e.target.value)} className={inputClass + " appearance-none cursor-pointer"}>
+                <select
+                  value={estado}
+                  onChange={e => setEstado(e.target.value)}
+                  className={inputClass + ' appearance-none cursor-pointer'}
+                >
                   <option value="" className="bg-slate-900">Selecione</option>
                   {ESTADOS.map(e => <option key={e} value={e} className="bg-slate-900">{e}</option>)}
                 </select>
@@ -132,69 +123,45 @@ export default function MatchPage() {
             </div>
           )}
 
-          {/* Temas */}
+          {/* Ano */}
           <div>
             <label className={labelClass}>
-              O que mais importa para você?{' '}
-              <span className="normal-case text-slate-600 font-normal">selecione quantos quiser</span>
+              Ano da eleição{' '}
+              <span className="normal-case text-slate-600 font-normal">(opcional — padrão: mais recente)</span>
             </label>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {TEMAS.map(({ icon, label }) => (
-                <button
-                  key={label}
-                  onClick={() => toggleTema(label)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-all ${
-                    temasSelecionados.includes(label)
-                      ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20'
-                      : 'bg-white/5 text-slate-300 border-white/15 hover:border-emerald-500/40 hover:text-white'
-                  }`}
-                >
-                  <span>{icon}</span>
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Campo livre */}
-          <div>
-            <label className={labelClass}>
-              Algo mais que você considera importante?{' '}
-              <span className="normal-case text-slate-600 font-normal">(opcional)</span>
-            </label>
-            <textarea
-              value={observacao}
-              onChange={e => setObservacao(e.target.value)}
-              placeholder="Ex: quero um candidato com histórico limpo que apoie pequenas empresas..."
-              rows={3}
-              className={inputClass + " resize-none"}
-            />
+            <select
+              value={ano}
+              onChange={e => setAno(e.target.value)}
+              className={inputClass + ' appearance-none cursor-pointer'}
+            >
+              <option value="" className="bg-slate-900">Mais recente disponível</option>
+              {ANOS.map(a => <option key={a} value={a} className="bg-slate-900">{a}</option>)}
+            </select>
           </div>
 
           <button
-            onClick={buscarMatch}
+            onClick={listar}
             disabled={loading || !cargo || (precisaEstado && !estado) || (precisaMunicipio && !municipio)}
             className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/20"
           >
-            {loading ? 'Analisando candidatos...' : 'Encontrar candidatos compatíveis'}
+            {loading ? 'Buscando candidatos...' : 'Ver todos os candidatos'}
           </button>
         </div>
 
-        {/* Loading */}
-        {loading && <LoadingConsulta mensagem="Buscando candidatos e cruzando com suas prioridades..." />}
+        {loading && (
+          <LoadingConsulta mensagem="Consultando TSE e cruzando com dados de transparência..." />
+        )}
 
-        {/* Erro */}
         {erro && (
           <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-5">
             <p className="text-red-400 text-sm">⚠️ {erro}</p>
           </div>
         )}
 
-        {/* Resultado */}
         {resposta && (
           <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-              <h2 className="font-semibold text-white">Candidatos compatíveis</h2>
+              <h2 className="font-semibold text-white">Candidatos encontrados</h2>
               <span className="text-xs text-slate-500 bg-white/5 px-3 py-1 rounded-full border border-white/10">
                 Fontes oficiais
               </span>

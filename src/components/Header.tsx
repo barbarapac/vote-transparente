@@ -25,6 +25,16 @@ export function Header() {
             Raio-X
           </Link>
           <Link
+            href="/candidatos"
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+              path === '/candidatos'
+                ? 'bg-emerald-500 text-white'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Campo Eleitoral
+          </Link>
+          <Link
             href="/match"
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
               path === '/match'

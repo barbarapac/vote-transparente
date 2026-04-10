@@ -30,6 +30,12 @@ export default function Home() {
               🔍 Pesquisar candidato
             </Link>
             <Link
+              href="/candidatos"
+              className="px-8 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/20 transition-all"
+            >
+              🏛️ Campo eleitoral
+            </Link>
+            <Link
               href="/match"
               className="px-8 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/20 transition-all"
             >
@@ -53,6 +59,20 @@ export default function Home() {
               </p>
               <span className="inline-flex items-center gap-1 mt-4 text-emerald-400 text-sm font-medium group-hover:gap-2 transition-all">
                 Pesquisar agora <span>→</span>
+              </span>
+            </div>
+          </Link>
+
+          <Link href="/candidatos" className="group">
+            <div className="h-full p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/8 hover:border-emerald-500/40 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-2xl mb-4">🏛️</div>
+              <h2 className="text-xl font-bold text-white mb-2">Campo Eleitoral</h2>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Veja todos os candidatos a um cargo com um resumo rápido de cada um —
+                envolvimento em escândalos, projetos e histórico eleitoral.
+              </p>
+              <span className="inline-flex items-center gap-1 mt-4 text-emerald-400 text-sm font-medium group-hover:gap-2 transition-all">
+                Ver candidatos <span>→</span>
               </span>
             </div>
           </Link>
