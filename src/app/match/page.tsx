@@ -1,6 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import {
+  Shield, HeartPulse, BookOpen, Leaf, Briefcase,
+  Search, House, Bus, Handshake, Lightbulb, AlertTriangle,
+} from 'lucide-react'
 import { Header } from '@/components/Header'
 import { Markdown } from '@/components/Markdown'
 import { LoadingConsulta } from '@/components/LoadingConsulta'
@@ -8,16 +12,16 @@ import { ESTADOS, CARGOS, CARGOS_COM_ESTADO, CARGOS_COM_MUNICIPIO } from '@/lib/
 import { inputClass, labelClass } from '@/lib/styles'
 
 const TEMAS = [
-  { icon: '🛡️', label: 'Segurança pública' },
-  { icon: '🏥', label: 'Saúde' },
-  { icon: '📚', label: 'Educação' },
-  { icon: '🌿', label: 'Meio ambiente' },
-  { icon: '💼', label: 'Economia e emprego' },
-  { icon: '🔍', label: 'Combate à corrupção' },
-  { icon: '🏠', label: 'Habitação' },
-  { icon: '🚌', label: 'Transporte público' },
-  { icon: '🤝', label: 'Direitos humanos' },
-  { icon: '💡', label: 'Tecnologia e inovação' },
+  { Icon: Shield,     label: 'Segurança pública' },
+  { Icon: HeartPulse, label: 'Saúde' },
+  { Icon: BookOpen,   label: 'Educação' },
+  { Icon: Leaf,       label: 'Meio ambiente' },
+  { Icon: Briefcase,  label: 'Economia e emprego' },
+  { Icon: Search,     label: 'Combate à corrupção' },
+  { Icon: House,      label: 'Habitação' },
+  { Icon: Bus,        label: 'Transporte público' },
+  { Icon: Handshake,  label: 'Direitos humanos' },
+  { Icon: Lightbulb,  label: 'Tecnologia e inovação' },
 ]
 
 export default function MatchPage() {
@@ -68,10 +72,13 @@ export default function MatchPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="relative min-h-screen flex flex-col">
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/40 via-slate-950 to-slate-950 pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
       <Header />
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
+      <main className="relative z-10 flex-1 max-w-3xl mx-auto w-full px-4 py-10">
         {/* Título */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Match de Valores</h1>
@@ -125,7 +132,7 @@ export default function MatchPage() {
               <span className="normal-case text-slate-600 font-normal">selecione quantos quiser</span>
             </label>
             <div className="flex flex-wrap gap-2 mt-1">
-              {TEMAS.map(({ icon, label }) => (
+              {TEMAS.map(({ Icon, label }) => (
                 <button
                   key={label}
                   onClick={() => toggleTema(label)}
@@ -135,7 +142,7 @@ export default function MatchPage() {
                       : 'bg-white/5 text-slate-300 border-white/15 hover:border-emerald-500/40 hover:text-white'
                   }`}
                 >
-                  <span>{icon}</span>
+                  <Icon size={13} />
                   <span>{label}</span>
                 </button>
               ))}
@@ -171,8 +178,9 @@ export default function MatchPage() {
 
         {/* Erro */}
         {erro && (
-          <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-5">
-            <p className="text-red-400 text-sm">⚠️ {erro}</p>
+          <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-5 flex items-start gap-3">
+            <AlertTriangle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
+            <p className="text-red-400 text-sm">{erro}</p>
           </div>
         )}
 

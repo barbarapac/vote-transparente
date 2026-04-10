@@ -31,6 +31,7 @@ export function Header() {
           <span>Vote Transparente</span>
         </Link>
         <nav className="flex items-center gap-1">
+          <NavLink href="/eleicoes" label="Eleições 2026" />
           <NavLink href="/candidato" label="Raio-X" />
           <NavLink href="/candidatos" label="Campo Eleitoral" />
           <NavLink href="/match" label="Match de Valores" />
