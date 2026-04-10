@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 function NavLink({ href, label }: { href: string; label: string }) {
@@ -26,7 +27,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-md">
       <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg text-white hover:text-emerald-400 transition-colors">
-          <span className="text-2xl">🗳️</span>
+          <Image src="/logo-sem-fundo.png" alt="Vote Transparente" width={80} height={80} className="object-contain" />
           <span>Vote Transparente</span>
         </Link>
         <nav className="flex items-center gap-1">

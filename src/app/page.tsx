@@ -3,13 +3,14 @@ import { Header } from '@/components/Header'
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="relative min-h-screen flex flex-col">
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/40 via-slate-950 to-slate-950 pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
       <Header />
 
       {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center text-center px-4 py-16 overflow-hidden select-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/40 via-slate-950 to-slate-950 pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative z-10 flex flex-col items-center justify-center text-center px-4 py-16 select-none">
 
         <div className="relative z-10 max-w-2xl mx-auto">
           <span className="inline-block px-3 py-1 mb-6 text-xs font-semibold tracking-widest uppercase rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
@@ -26,7 +27,7 @@ export default function Home() {
       </section>
 
       {/* Cards de funcionalidades */}
-      <section className="max-w-4xl mx-auto px-4 pb-16 w-full select-none">
+      <section className="relative z-10 max-w-4xl mx-auto px-4 pb-16 w-full select-none">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
           <Link href="/candidato" className="group">
             <div className="h-full p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/8 hover:border-emerald-500/40 transition-all">

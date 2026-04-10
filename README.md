@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="Vote Transparente" width="220" />
+  <img src="./asserts/logo.png" alt="Vote Transparente" width="220" />
 
   <h3>Transparência eleitoral com inteligência artificial</h3>
   <p>Plataforma cívica que cruza dados oficiais do governo brasileiro com IA<br/>para ajudar eleitores a conhecer candidatos com base em fatos, não em opiniões.</p>
