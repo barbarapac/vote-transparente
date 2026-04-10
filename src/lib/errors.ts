@@ -1,5 +1,6 @@
 interface ApiErrorWithStatus extends Error {
   status?: number
+  headers?: { get?: (key: string) => string | null } & Record<string, string>
 }
 
 export function parseApiError(error: unknown): { message: string; status: number } {
@@ -8,18 +9,32 @@ export function parseApiError(error: unknown): { message: string; status: number
   }
 
   const msg = error.message
-  const status = (error as ApiErrorWithStatus).status
+  const apiErr = error as ApiErrorWithStatus
+  const status = apiErr.status
 
-  // Groq SDK já parseia o JSON — verifica status diretamente no objeto
+  // Rate limit — usa headers HTTP do Groq (mais confiável que parsear texto)
   if (status === 429 || msg.includes('429')) {
-    const waitMatch = msg.match(/try again in (\d+h\d+m[\d.]+s|\d+m[\d.]+s|[\d.]+s)/)
-    const wait = waitMatch
-      ? ` Tente novamente em ${formatWait(waitMatch[1])}.`
+    const headers = apiErr.headers
+    const resetTokens = typeof headers?.get === 'function'
+      ? headers.get('x-ratelimit-reset-tokens')
+      : headers?.['x-ratelimit-reset-tokens']
+    const resetRequests = typeof headers?.get === 'function'
+      ? headers.get('x-ratelimit-reset-requests')
+      : headers?.['x-ratelimit-reset-requests']
+
+    const resetRaw = resetTokens || resetRequests
+
+    // Fallback: tenta extrair do texto da mensagem
+    const waitMatch = !resetRaw
+      ? msg.match(/try again in ([^\s.]+(?:\.[^\s.]+)?s|[^\s]+m[^\s]*s?)/)
+      : null
+
+    const waitRaw = resetRaw ?? waitMatch?.[1]
+    const wait = waitRaw
+      ? ` Tente novamente em ${formatWait(waitRaw)}.`
       : ' O limite diário pode ter sido atingido — tente novamente amanhã ou atualize o plano no console do Groq.'
-    return {
-      message: `Limite de consultas atingido.${wait}`,
-      status: 429,
-    }
+
+    return { message: `Limite de consultas atingido.${wait}`, status: 429 }
   }
 
   if (status === 400 || msg.includes('tool_use_failed')) {
@@ -36,30 +51,11 @@ export function parseApiError(error: unknown): { message: string; status: number
     }
   }
 
-  // Fallback: tenta extrair JSON embutido na mensagem (formato legado)
-  const jsonMatch = msg.match(/\{[\s\S]*\}/)
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]) as { error?: { code?: string; type?: string } }
-      const code = parsed.error?.code
-      const type = parsed.error?.type
-
-      if (code === 'rate_limit_exceeded' || type === 'tokens') {
-        const waitMatch = msg.match(/try again in (\d+h\d+m[\d.]+s|\d+m[\d.]+s|[\d.]+s)/)
-        const wait = waitMatch ? ` Tente novamente em ${formatWait(waitMatch[1])}.` : ''
-        return {
-          message: `Limite de consultas atingido.${wait} Se precisar continuar agora, atualize o plano no console do Groq.`,
-          status: 429,
-        }
-      }
-
-      if (type === 'invalid_request_error') {
-        return {
-          message: 'Não foi possível processar a consulta. Tente novamente com termos diferentes.',
-          status: 400,
-        }
-      }
-    } catch { /* não era JSON válido */ }
+  if (msg.includes('invalid_request_error')) {
+    return {
+      message: 'Não foi possível processar a consulta. Tente novamente com termos diferentes.',
+      status: 400,
+    }
   }
 
   // Erros de conexão com o MCP
@@ -82,12 +78,14 @@ export function parseApiError(error: unknown): { message: string; status: number
 }
 
 function formatWait(raw: string): string {
-  // "4h8m26.591s" → "4h 8min" | "8m26s" → "8min" | "16.533s" → "17s"
+  // "14.123s" → "15s" | "1m30s" → "1min 30s" | "4h8m" → "4h 8min"
   const hours = raw.match(/(\d+)h/)
   const mins = raw.match(/(\d+)m/)
   const secs = raw.match(/([\d.]+)s/)
+  if (hours && mins && secs) return `${hours[1]}h ${mins[1]}min ${Math.ceil(parseFloat(secs[1]))}s`
   if (hours && mins) return `${hours[1]}h ${mins[1]}min`
   if (hours) return `${hours[1]}h`
+  if (mins && secs) return `${mins[1]}min ${Math.ceil(parseFloat(secs[1]))}s`
   if (mins) return `${mins[1]}min`
   if (secs) return `${Math.ceil(parseFloat(secs[1]))}s`
   return raw
