@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { consultarComIA } from '@/lib/gemini'
+import { consultarComIA } from '@/lib/llm'
 
 export async function POST(req: NextRequest) {
   try {
