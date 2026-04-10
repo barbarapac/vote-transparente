@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="Voto Transparente" width="220" />
+  <img src="logo.png" alt="Vote Transparente" width="220" />
 
   <h3>Transparência eleitoral com inteligência artificial</h3>
   <p>Plataforma cívica que cruza dados oficiais do governo brasileiro com IA<br/>para ajudar eleitores a conhecer candidatos com base em fatos, não em opiniões.</p>
@@ -12,15 +12,11 @@
   ![License](https://img.shields.io/badge/licença-MIT-green)
 </div>
 
----
+## Contexto
 
-## O que é
-
-O **Voto Transparente** é uma plataforma web pública e gratuita onde qualquer eleitor pode pesquisar candidatos e tomar decisões eleitorais com base em dados reais — não em boatos.
+O **Vote Transparente** é uma plataforma web pública e gratuita onde qualquer eleitor pode pesquisar candidatos e tomar decisões eleitorais com base em dados reais — não em boatos.
 
 **Princípio central:** a IA nunca opina. Ela cruza dados oficiais e explica o que encontrou. Toda informação tem fonte rastreável.
-
----
 
 ## Funcionalidades
 
@@ -29,8 +25,6 @@ O **Voto Transparente** é uma plataforma web pública e gratuita onde qualquer 
 | Raio-X do Candidato | `/candidato` | Relatório completo: candidaturas, financiamento, histórico parlamentar, processos no TCU, gastos de mandato e anúncios pagos em redes sociais |
 | Explorar por Cargo | `/candidatos` | Listagem de candidatos filtrada por cargo, estado, município e ano de eleição |
 | Match de Valores | `/match` | Questionário de prioridades temáticas com recomendação fundamentada em dados |
-
----
 
 ## Arquitetura
 
@@ -51,8 +45,6 @@ flowchart TD
 5. O servidor `mcp-brasil` consulta as APIs oficiais e retorna os dados
 6. O modelo sintetiza e apresenta a resposta com as fontes citadas
 
----
-
 ## Tecnologias
 
 | Categoria | Tecnologia |
@@ -62,16 +54,12 @@ flowchart TD
 | IA | [Groq API](https://groq.com) — modelo `llama-3.3-70b-versatile` com function calling |
 | Dados gov. | [mcp-brasil](https://github.com/jxnxts/mcp-brasil) — 363+ ferramentas conectadas a APIs oficiais |
 
----
-
 ## Pré-requisitos
 
 - **Node.js** 20 ou superior — [nodejs.org](https://nodejs.org)
 - **Python** 3.11 ou superior — [python.org](https://python.org) *(para rodar o mcp-brasil localmente)*
 - **Git** — [git-scm.com](https://git-scm.com)
 - Chave de API da **Groq** — [console.groq.com](https://console.groq.com) *(gratuita)*
-
----
 
 ## Variáveis de Ambiente
 
@@ -94,15 +82,14 @@ META_ACCESS_TOKEN=seu_token_aqui       # developers.facebook.com (Ad Library API
 
 Sem as variáveis opcionais a aplicação funciona normalmente. As ferramentas que dependem delas ficam indisponíveis; as demais 38+ APIs abertas do MCP Brasil continuam ativas.
 
----
 
 ## Como Executar Localmente
 
 **1. Clonar o repositório**
 
 ```bash
-git clone https://github.com/barbarapac/voto-transparente.git
-cd voto-transparente
+git clone https://github.com/barbarapac/vote-transparente.git
+cd vote-transparente
 ```
 
 **2. Instalar dependências**
@@ -134,8 +121,6 @@ npm run dev
 
 Acesse [http://localhost:3000](http://localhost:3000) no navegador.
 
----
-
 ## Scripts
 
 | Script | Descrição |
@@ -145,7 +130,6 @@ Acesse [http://localhost:3000](http://localhost:3000) no navegador.
 | `npm run start` | Executa o build de produção |
 | `npm run lint` | Linting com ESLint |
 
----
 
 ## Fontes de Dados
 
@@ -161,7 +145,6 @@ Acesse [http://localhost:3000](http://localhost:3000) no navegador.
 
 Todas as consultas são feitas via [mcp-brasil](https://github.com/jxnxts/mcp-brasil), servidor MCP open-source com 363+ ferramentas.
 
----
 
 ## Licença
 
