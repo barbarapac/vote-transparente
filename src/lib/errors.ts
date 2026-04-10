@@ -1,9 +1,5 @@
-interface GroqError {
-  error?: {
-    code?: string
-    type?: string
-    message?: string
-  }
+interface ApiErrorWithStatus extends Error {
+  status?: number
 }
 
 export function parseApiError(error: unknown): { message: string; status: number } {
@@ -12,12 +8,37 @@ export function parseApiError(error: unknown): { message: string; status: number
   }
 
   const msg = error.message
+  const status = (error as ApiErrorWithStatus).status
 
-  // Tenta extrair JSON da mensagem de erro do Groq
+  // Groq SDK já parseia o JSON — verifica status diretamente no objeto
+  if (status === 429 || msg.includes('429')) {
+    const waitMatch = msg.match(/try again in (\d+h\d+m[\d.]+s|\d+m[\d.]+s|[\d.]+s)/)
+    const wait = waitMatch ? ` Tente novamente em ${formatWait(waitMatch[1])}.` : ''
+    return {
+      message: `Limite de consultas atingido.${wait} Se precisar continuar agora, atualize o plano no console do Groq.`,
+      status: 429,
+    }
+  }
+
+  if (status === 400 || msg.includes('tool_use_failed')) {
+    return {
+      message: 'Houve um problema ao consultar as fontes de dados. Tente reformular sua pesquisa.',
+      status: 400,
+    }
+  }
+
+  if (status === 503 || msg.includes('model_not_active') || msg.includes('model_decommissioned')) {
+    return {
+      message: 'O modelo de IA está temporariamente indisponível. Tente novamente em alguns minutos.',
+      status: 503,
+    }
+  }
+
+  // Fallback: tenta extrair JSON embutido na mensagem (formato legado)
   const jsonMatch = msg.match(/\{[\s\S]*\}/)
   if (jsonMatch) {
     try {
-      const parsed: GroqError = JSON.parse(jsonMatch[0])
+      const parsed = JSON.parse(jsonMatch[0]) as { error?: { code?: string; type?: string } }
       const code = parsed.error?.code
       const type = parsed.error?.type
 
@@ -27,20 +48,6 @@ export function parseApiError(error: unknown): { message: string; status: number
         return {
           message: `Limite de consultas atingido.${wait} Se precisar continuar agora, atualize o plano no console do Groq.`,
           status: 429,
-        }
-      }
-
-      if (code === 'tool_use_failed') {
-        return {
-          message: 'Houve um problema ao consultar as fontes de dados. Tente reformular sua pesquisa.',
-          status: 400,
-        }
-      }
-
-      if (code === 'model_not_active' || code === 'model_decommissioned') {
-        return {
-          message: 'O modelo de IA está temporariamente indisponível. Tente novamente em alguns minutos.',
-          status: 503,
         }
       }
 
