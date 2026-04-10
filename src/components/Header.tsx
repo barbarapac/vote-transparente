@@ -11,7 +11,7 @@ export function Header() {
       <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-bold text-lg text-white hover:text-emerald-400 transition-colors">
           <span className="text-2xl">🗳️</span>
-          <span>Voto Transparente</span>
+          <span>Vote Transparente</span>
         </Link>
         <nav className="flex items-center gap-1">
           <Link

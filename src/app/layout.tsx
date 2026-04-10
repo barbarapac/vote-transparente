@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Voto Transparente — Pesquise candidatos com dados oficiais",
+  title: "Vote Transparente — Pesquise candidatos com dados oficiais",
   description: "Pesquise candidatos e tome uma decisão de voto informada com base em dados oficiais do governo brasileiro.",
 };
 
