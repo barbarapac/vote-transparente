@@ -99,7 +99,7 @@ export default function MatchPage() {
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6 space-y-6">
 
           {/* Cargo e Estado */}
-          <div className={`grid gap-4 ${precisaEstado ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <div className={precisaEstado ? 'grid grid-cols-2 gap-4' : 'grid grid-cols-1 gap-4'}>
             <div>
               <label className={labelClass}>Cargo *</label>
               <select value={cargo} onChange={e => handleCargo(e.target.value)} className={inputClass + " appearance-none cursor-pointer"}>
