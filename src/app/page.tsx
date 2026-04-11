@@ -1,6 +1,112 @@
 import Link from 'next/link'
-import { Vote, Search, Landmark, Scale, DollarSign, ArrowRight, ExternalLink } from 'lucide-react'
+import {
+  Vote, Search, Landmark, Scale, DollarSign, ArrowRight, ExternalLink,
+  GitCompare, ClipboardCheck, Building2, BarChart2, ShieldCheck, History,
+} from 'lucide-react'
 import { Header } from '@/components/Header'
+
+const FERRAMENTAS = [
+  {
+    href: '/eleicoes',
+    cor: 'hover:border-blue-500/40',
+    icone: <Vote size={22} className="text-blue-400" />,
+    bg: 'bg-blue-500/20',
+    label: 'text-blue-400',
+    titulo: 'Eleições 2026',
+    descricao: 'Conheça todos os cargos em disputa, o calendário eleitoral e tire dúvidas sobre o processo democrático.',
+    cta: 'Explorar eleições',
+  },
+  {
+    href: '/candidato',
+    cor: 'hover:border-emerald-500/40',
+    icone: <Search size={22} className="text-emerald-400" />,
+    bg: 'bg-emerald-500/20',
+    label: 'text-emerald-400',
+    titulo: 'Raio-X do Candidato',
+    descricao: 'Relatório completo: histórico eleitoral, financiadores, processos, gastos e anúncios pagos em redes sociais.',
+    cta: 'Pesquisar candidato',
+  },
+  {
+    href: '/comparador',
+    cor: 'hover:border-violet-500/40',
+    icone: <GitCompare size={22} className="text-violet-400" />,
+    bg: 'bg-violet-500/20',
+    label: 'text-violet-400',
+    titulo: 'Comparador',
+    descricao: 'Coloque dois candidatos lado a lado e compare financiamento, patrimônio, histórico parlamentar e transparência.',
+    cta: 'Comparar candidatos',
+  },
+  {
+    href: '/match',
+    cor: 'hover:border-emerald-500/40',
+    icone: <Scale size={22} className="text-emerald-400" />,
+    bg: 'bg-emerald-500/20',
+    label: 'text-emerald-400',
+    titulo: 'Match de Valores',
+    descricao: 'Diga o que mais importa para você e descubra qual candidato tem histórico mais alinhado com suas prioridades.',
+    cta: 'Fazer match',
+  },
+  {
+    href: '/verificador',
+    cor: 'hover:border-rose-500/40',
+    icone: <ShieldCheck size={22} className="text-rose-400" />,
+    bg: 'bg-rose-500/20',
+    label: 'text-rose-400',
+    titulo: 'Verificador de Afirmações',
+    descricao: 'Cole uma afirmação política e a IA verifica nos dados oficiais se ela é verdadeira, falsa ou sem dados suficientes.',
+    cta: 'Verificar afirmação',
+  },
+  {
+    href: '/promessas',
+    cor: 'hover:border-amber-500/40',
+    icone: <ClipboardCheck size={22} className="text-amber-400" />,
+    bg: 'bg-amber-500/20',
+    label: 'text-amber-400',
+    titulo: 'Rastreador de Promessas',
+    descricao: 'Cruze promessas de campanha com votações e ações reais — veja onde o discurso e o voto se alinham ou divergem.',
+    cta: 'Rastrear promessas',
+  },
+  {
+    href: '/financiadores',
+    cor: 'hover:border-orange-500/40',
+    icone: <Building2 size={22} className="text-orange-400" />,
+    bg: 'bg-orange-500/20',
+    label: 'text-orange-400',
+    titulo: 'Quem Financia Quem',
+    descricao: 'Digite uma empresa ou CNPJ e descubra quais candidatos e partidos receberam doações eleitorais desse doador.',
+    cta: 'Rastrear doações',
+  },
+  {
+    href: '/mandato',
+    cor: 'hover:border-cyan-500/40',
+    icone: <BarChart2 size={22} className="text-cyan-400" />,
+    bg: 'bg-cyan-500/20',
+    label: 'text-cyan-400',
+    titulo: 'Painel do Mandato',
+    descricao: 'Presença nas votações, projetos de lei apresentados, gastos da cota parlamentar e participação em comissões.',
+    cta: 'Ver painel',
+  },
+  {
+    href: '/timeline',
+    cor: 'hover:border-indigo-500/40',
+    icone: <History size={22} className="text-indigo-400" />,
+    bg: 'bg-indigo-500/20',
+    label: 'text-indigo-400',
+    titulo: 'Linha do Tempo',
+    descricao: 'Toda a carreira política em ordem cronológica — partidos, eleições, mandatos, mudanças e fatos marcantes.',
+    cta: 'Ver trajetória',
+  },
+  {
+    href: '/candidatos',
+    cor: 'hover:border-emerald-500/40',
+    icone: <Landmark size={22} className="text-emerald-400" />,
+    bg: 'bg-emerald-500/20',
+    label: 'text-emerald-400',
+    titulo: 'Campo Eleitoral',
+    descricao: 'Veja todos os candidatos a um cargo com resumo rápido de cada um — escândalos, projetos e histórico.',
+    cta: 'Ver candidatos',
+  },
+]
 
 export default function Home() {
   return (
@@ -26,75 +132,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Cards de funcionalidades */}
-      <section className="relative z-10 max-w-4xl mx-auto px-4 pb-16 w-full select-none">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
-
-          <Link href="/eleicoes" className="group">
-            <div className="h-full p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/8 hover:border-blue-500/40 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center mb-4">
-                <Vote size={22} className="text-blue-400" />
+      {/* Cards de ferramentas */}
+      <section className="relative z-10 max-w-5xl mx-auto px-4 pb-16 w-full select-none">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+          {FERRAMENTAS.map(f => (
+            <Link key={f.href} href={f.href} className="group">
+              <div className={`h-full p-6 rounded-2xl bg-white/5 border border-white/10 ${f.cor} hover:bg-white/8 transition-all`}>
+                <div className={`w-12 h-12 rounded-xl ${f.bg} flex items-center justify-center mb-4`}>
+                  {f.icone}
+                </div>
+                <h2 className="text-lg font-bold text-white mb-2">{f.titulo}</h2>
+                <p className="text-slate-400 text-sm leading-relaxed">{f.descricao}</p>
+                <span className={`inline-flex items-center gap-1 mt-4 text-sm font-medium group-hover:gap-2 transition-all ${f.label}`}>
+                  {f.cta} <ArrowRight size={14} />
+                </span>
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Eleições 2026</h2>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Conheça todos os cargos em disputa, o calendário eleitoral e
-                tire dúvidas sobre o processo democrático brasileiro.
-              </p>
-              <span className="inline-flex items-center gap-1 mt-4 text-blue-400 text-sm font-medium group-hover:gap-2 transition-all">
-                Explorar eleições <ArrowRight size={14} />
-              </span>
-            </div>
-          </Link>
-
-          <Link href="/candidato" className="group">
-            <div className="h-full p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/8 hover:border-emerald-500/40 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4">
-                <Search size={22} className="text-emerald-400" />
-              </div>
-              <h2 className="text-xl font-bold text-white mb-2">Raio-X do Candidato</h2>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Digite o nome de qualquer candidato e receba um relatório completo:
-                histórico eleitoral, financiadores, processos, gastos públicos
-                e anúncios pagos em redes sociais.
-              </p>
-              <span className="inline-flex items-center gap-1 mt-4 text-emerald-400 text-sm font-medium group-hover:gap-2 transition-all">
-                Pesquisar agora <ArrowRight size={14} />
-              </span>
-            </div>
-          </Link>
-
-          <Link href="/candidatos" className="group">
-            <div className="h-full p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/8 hover:border-emerald-500/40 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4">
-                <Landmark size={22} className="text-emerald-400" />
-              </div>
-              <h2 className="text-xl font-bold text-white mb-2">Campo Eleitoral</h2>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Veja todos os candidatos a um cargo com um resumo rápido de cada um —
-                envolvimento em escândalos, projetos e histórico eleitoral.
-              </p>
-              <span className="inline-flex items-center gap-1 mt-4 text-emerald-400 text-sm font-medium group-hover:gap-2 transition-all">
-                Ver candidatos <ArrowRight size={14} />
-              </span>
-            </div>
-          </Link>
-
-          <Link href="/match" className="group">
-            <div className="h-full p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/8 hover:border-emerald-500/40 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-4">
-                <Scale size={22} className="text-emerald-400" />
-              </div>
-              <h2 className="text-xl font-bold text-white mb-2">Match de Valores</h2>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Diga o que mais importa para você — saúde, educação, segurança,
-                meio ambiente — e descubra qual candidato tem histórico mais
-                alinhado com suas prioridades.
-              </p>
-              <span className="inline-flex items-center gap-1 mt-4 text-emerald-400 text-sm font-medium group-hover:gap-2 transition-all">
-                Descobrir candidatos <ArrowRight size={14} />
-              </span>
-            </div>
-          </Link>
+            </Link>
+          ))}
         </div>
 
         {/* Fontes */}
